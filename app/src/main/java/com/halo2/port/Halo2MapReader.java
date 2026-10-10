@@ -101,17 +101,17 @@ public final class Halo2MapReader {
                 boolean tagsSignatureOk = tagsSignature == 0x74616773L; // retail 'tags'
                 boolean countsPlausible = groupCount > 0 && groupCount <= 65536
                         && instanceCount > 0 && instanceCount <= 1000000;
-                out.append("\\nTAG DATA HEADER CHECK (decompiled layout)\\n");
-                out.append("Groups pointer: ").append(hex(groupsPtr)).append('\\n');
-                out.append("Group count: ").append(groupCount).append('\\n');
-                out.append("Instances pointer: ").append(hex(instancesPtr)).append('\\n');
-                out.append("Scenario index: ").append(hex(scenarioIndex)).append('\\n');
-                out.append("Globals index: ").append(hex(globalsIndex)).append('\\n');
-                out.append("Instance count: ").append(instanceCount).append('\\n');
-                out.append("Tag header signature: ").append(hex(tagsSignature)).append('\\n');
-                out.append("Tag header signature: ").append(pass(tagsSignatureOk)).append('\\n');
-                out.append("Tag counts plausible: ").append(pass(countsPlausible)).append('\\n');
-                out.append("Pointer values are reported only; relocation/base is not yet verified.\\n");
+                out.append("\nTAG DATA HEADER CHECK (decompiled layout)\n");
+                out.append("Groups pointer: ").append(hex(groupsPtr)).append('\n');
+                out.append("Group count: ").append(groupCount).append('\n');
+                out.append("Instances pointer: ").append(hex(instancesPtr)).append('\n');
+                out.append("Scenario index: ").append(hex(scenarioIndex)).append('\n');
+                out.append("Globals index: ").append(hex(globalsIndex)).append('\n');
+                out.append("Instance count: ").append(instanceCount).append('\n');
+                out.append("Tag header signature: ").append(hex(tagsSignature)).append('\n');
+                out.append("Tag header signature: ").append(pass(tagsSignatureOk)).append('\n');
+                out.append("Tag counts plausible: ").append(pass(countsPlausible)).append('\n');
+                out.append("Pointer values are reported only; relocation/base is not yet verified.\n");
             }
 
             // Research aid only: scan aligned words throughout the bounded index
