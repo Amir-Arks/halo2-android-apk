@@ -84,7 +84,31 @@ public final class Halo2MapReader {
                         indexOffset + off, u32(words, off)));
             }
             out.append("Sample bytes: ").append(sample.length).append('\n');
-            out.append("Index sample is diagnostic only; no tag entries have been decoded.\n");
+
+            // Research aid only: scan aligned words throughout the bounded index
+            // for printable 4-byte sequences. These are candidates, not proven tags.
+            byte[] indexBytes = readAt(resolver, uri, indexOffset, (int) indexLength);
+            java.util.Map<String, Integer> printableWords = new java.util.TreeMap<>();
+            ByteBuffer scan = ByteBuffer.wrap(indexBytes).order(ByteOrder.LITTLE_ENDIAN);
+            for (int off = 0; off + 4 <= indexBytes.length; off += 4) {
+                long value = u32(scan, off);
+                String candidate = fourPrintableBytes(value);
+                if (candidate != null) {
+                    printableWords.put(candidate, printableWords.getOrDefault(candidate, 0) + 1);
+                }
+            }
+            out.append("\\nALIGNED PRINTABLE-WORD SCAN (exploratory)\\n");
+            out.append("Aligned 4-byte printable candidates: ").append(printableWords.values()
+                    .stream().mapToInt(Integer::intValue).sum()).append('\\n');
+            int shown = 0;
+            for (java.util.Map.Entry<String, Integer> entry : printableWords.entrySet()) {
+                out.append(entry.getKey()).append(" : ").append(entry.getValue()).append('\\n');
+                if (++shown >= 24) {
+                    out.append("Output capped at 24 unique candidates.\\n");
+                    break;
+                }
+            }
+            out.append("Candidates are not decoded tag records; index layout remains unconfirmed.\\n");
         } else {
             out.append("\nINDEX SAMPLE SKIPPED: invalid or empty index range.\n");
         }
