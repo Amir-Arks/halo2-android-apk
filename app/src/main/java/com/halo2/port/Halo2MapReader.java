@@ -99,10 +99,10 @@ public final class Halo2MapReader {
             }
             out.append("\nALIGNED PRINTABLE-WORD SCAN (exploratory)\n");
             out.append("Aligned 4-byte printable candidates: ").append(printableWords.values()
-                    .stream().mapToInt(Integer::intValue).sum()).append('\\n');
+                    .stream().mapToInt(Integer::intValue).sum()).append('\n');
             int shown = 0;
             for (java.util.Map.Entry<String, Integer> entry : printableWords.entrySet()) {
-                out.append(entry.getKey()).append(" : ").append(entry.getValue()).append('\\n');
+                out.append(entry.getKey()).append(" : ").append(entry.getValue()).append('\n');
                 if (++shown >= 24) {
                     out.append("Output capped at 24 unique candidates.\n");
                     break;
