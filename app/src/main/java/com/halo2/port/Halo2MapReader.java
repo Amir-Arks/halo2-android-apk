@@ -97,16 +97,27 @@ public final class Halo2MapReader {
                     printableWords.put(candidate, printableWords.getOrDefault(candidate, 0) + 1);
                 }
             }
+            int totalOccurrences = printableWords.values().stream()
+                    .mapToInt(Integer::intValue).sum();
             out.append("\nALIGNED PRINTABLE-WORD SCAN (exploratory)\n");
-            out.append("Aligned 4-byte printable candidates: ").append(printableWords.values()
-                    .stream().mapToInt(Integer::intValue).sum()).append('\n');
-            int shown = 0;
-            for (java.util.Map.Entry<String, Integer> entry : printableWords.entrySet()) {
+            out.append("Printable 4-byte occurrences: ").append(totalOccurrences).append('\n');
+            out.append("Unique printable words: ").append(printableWords.size()).append('\n');
+
+            // Show the most frequent words first; this is easier to inspect than
+            // alphabetical output, but frequency alone does not prove tag identity.
+            java.util.List<java.util.Map.Entry<String, Integer>> ranked =
+                    new java.util.ArrayList<>(printableWords.entrySet());
+            ranked.sort((a, b) -> {
+                int byCount = Integer.compare(b.getValue(), a.getValue());
+                return byCount != 0 ? byCount : a.getKey().compareTo(b.getKey());
+            });
+            int shown = Math.min(24, ranked.size());
+            for (int i = 0; i < shown; i++) {
+                java.util.Map.Entry<String, Integer> entry = ranked.get(i);
                 out.append(entry.getKey()).append(" : ").append(entry.getValue()).append('\n');
-                if (++shown >= 24) {
-                    out.append("Output capped at 24 unique candidates.\n");
-                    break;
-                }
+            }
+            if (ranked.size() > shown) {
+                out.append("Output capped at ").append(shown).append(" ranked words.\n");
             }
             out.append("Candidates are not decoded tag records; index layout remains unconfirmed.\n");
         } else {
