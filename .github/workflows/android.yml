@@ -3,7 +3,7 @@ name: Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [main, 'fix/**']
+    branches: [main, 'fix/**', 'milestone-3-**']
 
 jobs:
   build:
