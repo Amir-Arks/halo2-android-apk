@@ -139,35 +139,102 @@ public class MainActivity extends Activity {
                 if (n < 0) break;
                 count += n;
             }
-            if (count < 4) return "ERROR: header shorter than 4 bytes";
+            if (count < 32) return "ERROR: map header shorter than 32 bytes";
 
-            long magic = ((long) bytes[0] & 0xff)
-                    | (((long) bytes[1] & 0xff) << 8)
-                    | (((long) bytes[2] & 0xff) << 16)
-                    | (((long) bytes[3] & 0xff) << 24);
+            long magic = le32(bytes, 0);
+            long format = le32(bytes, 4);
+            long eof = le32(bytes, 8);
+            long indexOffset = le32(bytes, 0x10);
+            long indexLength = le32(bytes, 0x14);
+            long indexAndMetaLength = le32(bytes, 0x18);
+            long allExceptRawLength = le32(bytes, 0x1c);
+            long actualLength = file.length();
+
             StringBuilder out = new StringBuilder();
-            out.append("Signature as little-endian word: ");
-            if (magic == 0x68656164L) out.append("head (0x68656164)\n");
-            else out.append(String.format("unknown (0x%08X)\n", magic));
-            out.append("Offset  LE uint32   Raw bytes\n");
+            out.append("HALO 2 MAP HEADER VALIDATION\n");
+            out.append("Signature: ").append(magic == 0x68656164L ? "head (valid signature)" :
+                    String.format("unknown 0x%08X", magic)).append("\n");
+            out.append(String.format("Format/version word: 0x%08X\n", format));
+            out.append("Declared end-of-file: ").append(eof).append(" bytes\n");
+            out.append("Actual file length: ").append(actualLength).append(" bytes\n");
+            out.append(String.format("Index offset: 0x%08X (%d)\n", indexOffset, indexOffset));
+            out.append(String.format("Index length: 0x%08X (%d)\n", indexLength, indexLength));
+            out.append(String.format("Index + metadata length: 0x%08X\n", indexAndMetaLength));
+            out.append(String.format("All-except-raw length: 0x%08X\n", allExceptRawLength));
 
+            boolean signatureOk = magic == 0x68656164L;
+            boolean eofOk = eof >= 0x800 && eof <= actualLength;
+            boolean indexRangeOk = indexOffset <= actualLength
+                    && indexLength <= actualLength - indexOffset;
+            out.append("\nVALIDATION\n");
+            out.append("Header signature: ").append(signatureOk ? "PASS" : "FAIL").append("\n");
+            out.append("Declared file bounds: ").append(eofOk ? "PASS" : "CHECK").append("\n");
+            out.append("Index range inside file: ").append(indexRangeOk ? "PASS" : "CHECK").append("\n");
+            out.append("Note: these checks validate bounds only; they do not decode tags or render a level.\n");
+
+            out.append("\nFIRST 64 BYTES (LE uint32)\nOffset   Value       Raw bytes\n");
             for (int offset = 0; offset + 3 < count; offset += 4) {
-                long value = ((long) bytes[offset] & 0xff)
-                        | (((long) bytes[offset + 1] & 0xff) << 8)
-                        | (((long) bytes[offset + 2] & 0xff) << 16)
-                        | (((long) bytes[offset + 3] & 0xff) << 24);
+                long value = le32(bytes, offset);
                 out.append(String.format("0x%02X    0x%08X  %02X %02X %02X %02X",
                         offset, value, bytes[offset] & 0xff, bytes[offset + 1] & 0xff,
                         bytes[offset + 2] & 0xff, bytes[offset + 3] & 0xff));
-                if (offset == 0) out.append("  <- magic candidate");
                 out.append('\n');
             }
-            if (count < bytes.length) out.append("Only ").append(count).append(" bytes available.\n");
-            out.append("\nWord values are decoded for inspection; field meanings are not assumed.");
+            if (signatureOk && eofOk && indexRangeOk && indexLength >= 16) {
+                out.append("\nINDEX REGION SAMPLE (first 128 bytes)\n");
+                out.append(readRegionWords(file, indexOffset, (int) Math.min(128L, indexLength)));
+                out.append("Raw words only; field meanings are not assumed.\n");
+            } else {
+                out.append("\nINDEX REGION SAMPLE: SKIPPED (header/range validation did not pass).\n");
+            }
             return out.toString();
         } catch (IOException | SecurityException error) {
-            return "ERROR reading header: " + error.getClass().getSimpleName();
+            return "ERROR reading header: " + error.getClass().getSimpleName()
+                    + ": " + error.getMessage();
         }
+    }
+
+    private String readRegionWords(DocumentFile file, long offset, int maxBytes) {
+        if (offset < 0 || maxBytes < 0) return "ERROR: invalid region range\n";
+        try (InputStream in = getContentResolver().openInputStream(file.getUri())) {
+            if (in == null) return "ERROR: unable to reopen map file\n";
+            long remaining = offset;
+            while (remaining > 0) {
+                long skipped = in.skip(remaining);
+                if (skipped > 0) {
+                    remaining -= skipped;
+                } else {
+                    if (in.read() < 0) return "ERROR: reached EOF before index offset\n";
+                    remaining--;
+                }
+            }
+            byte[] bytes = new byte[maxBytes];
+            int count = 0;
+            while (count < bytes.length) {
+                int n = in.read(bytes, count, bytes.length - count);
+                if (n < 0) break;
+                count += n;
+            }
+            StringBuilder out = new StringBuilder();
+            out.append("Read ").append(count).append(" bytes at file offset 0x")
+                    .append(String.format("%08X", offset)).append("\n");
+            for (int p = 0; p + 3 < count; p += 4) {
+                out.append(String.format("0x%08X  0x%08X  %02X %02X %02X %02X\n",
+                        offset + p, le32(bytes, p), bytes[p] & 0xff,
+                        bytes[p + 1] & 0xff, bytes[p + 2] & 0xff, bytes[p + 3] & 0xff));
+            }
+            return out.toString();
+        } catch (IOException | SecurityException error) {
+            return "ERROR reading index region: " + error.getClass().getSimpleName()
+                    + ": " + error.getMessage() + "\n";
+        }
+    }
+
+    private long le32(byte[] bytes, int offset) {
+        return ((long) bytes[offset] & 0xff)
+                | (((long) bytes[offset + 1] & 0xff) << 8)
+                | (((long) bytes[offset + 2] & 0xff) << 16)
+                | (((long) bytes[offset + 3] & 0xff) << 24);
     }
 
     private String formatBytes(long bytes) {
