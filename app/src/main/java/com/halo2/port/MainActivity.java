@@ -35,7 +35,7 @@ public class MainActivity extends Activity {
         page.addView(title);
 
         TextView intro = new TextView(this);
-        intro.setText("Milestone 1: verify your extracted game files. Select the folder that contains default.xbe and the maps directory. This app does not run gameplay yet.");
+        intro.setText("Milestone 3: validate Halo 2 map headers and index bounds. Select the folder containing default.xbe and maps. Tag decoding and gameplay are not implemented yet.");
         intro.setTextSize(16);
         intro.setPadding(0, 0, 0, 18);
         page.addView(intro);
@@ -106,9 +106,16 @@ public class MainActivity extends Activity {
         report.append("Top-level .map files: ").append(mapFiles).append("\n");
         report.append("Map data size: ").append(formatBytes(mapBytes)).append("\n");
         if (sampleMap != null) {
-            report.append("\nSAMPLE MAP HEADER (first 64 bytes)\n");
+            report.append("\n");
             report.append("File: ").append(sampleMap.getName()).append("\n");
-            report.append(readHeaderHex(sampleMap)).append("\n");
+            try {
+                report.append(Halo2MapReader.inspect(
+                        getContentResolver(), sampleMap.getUri(), sampleMap.length()));
+            } catch (IOException | SecurityException error) {
+                report.append("MAP INSPECTION ERROR: ")
+                      .append(error.getClass().getSimpleName()).append("\n");
+            }
+            report.append("\n");
         }
 
         if (xbe != null && maps != null && maps.isDirectory() && mapFiles > 0) {
