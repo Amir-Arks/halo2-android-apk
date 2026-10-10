@@ -146,6 +146,16 @@ public final class Halo2MapReader {
         }
     }
 
+    private static String fourPrintableBytes(long value) {
+        char[] chars = new char[4];
+        for (int i = 0; i < 4; i++) {
+            int b = (int) ((value >>> (i * 8)) & 0xff);
+            if (b < 0x20 || b > 0x7e) return null;
+            chars[i] = (char) b;
+        }
+        return new String(chars);
+    }
+
     private static long u32(ByteBuffer buffer, int offset) {
         return Integer.toUnsignedLong(buffer.getInt(offset));
     }
