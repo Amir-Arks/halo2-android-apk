@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.content.Intent;
 import android.net.Uri;
+import java.io.InputStream;
+import java.io.IOException;
 import android.graphics.Typeface;
 import android.view.Gravity;
 import android.view.View;
@@ -84,12 +86,14 @@ public class MainActivity extends Activity {
 
         int mapFiles = 0;
         long mapBytes = 0;
+        DocumentFile sampleMap = null;
         if (maps != null && maps.isDirectory()) {
             for (DocumentFile file : maps.listFiles()) {
                 if (file.isFile() && file.getName() != null
                         && file.getName().toLowerCase().endsWith(".map")) {
                     mapFiles++;
                     if (file.length() > 0) mapBytes += file.length();
+                    if (sampleMap == null) sampleMap = file;
                 }
             }
         }
@@ -100,7 +104,12 @@ public class MainActivity extends Activity {
         report.append("default.xbe: ").append(xbe != null && xbe.isFile() ? "FOUND" : "MISSING").append("\n");
         report.append("maps folder: ").append(maps != null && maps.isDirectory() ? "FOUND" : "MISSING").append("\n");
         report.append("Top-level .map files: ").append(mapFiles).append("\n");
-        report.append("Map data size: ").append(formatBytes(mapBytes)).append("\n\n");
+        report.append("Map data size: ").append(formatBytes(mapBytes)).append("\n");
+        if (sampleMap != null) {
+            report.append("\nSAMPLE MAP HEADER (first 64 bytes)\n");
+            report.append("File: ").append(sampleMap.getName()).append("\n");
+            report.append(readHeaderHex(sampleMap)).append("\n");
+        }
 
         if (xbe != null && maps != null && maps.isDirectory() && mapFiles > 0) {
             report.append("RESULT: BASIC ASSET STRUCTURE FOUND\n");
@@ -118,6 +127,28 @@ public class MainActivity extends Activity {
             if (child.getName() != null && child.getName().equalsIgnoreCase(wanted)) return child;
         }
         return null;
+    }
+
+    private String readHeaderHex(DocumentFile file) {
+        try (InputStream in = getContentResolver().openInputStream(file.getUri())) {
+            if (in == null) return "ERROR: unable to open map file";
+            byte[] bytes = new byte[64];
+            int count = 0;
+            while (count < bytes.length) {
+                int n = in.read(bytes, count, bytes.length - count);
+                if (n < 0) break;
+                count += n;
+            }
+            if (count == 0) return "(empty file)";
+            StringBuilder hex = new StringBuilder();
+            for (int i = 0; i < count; i++) {
+                if (i > 0 && i % 16 == 0) hex.append('\n');
+                hex.append(String.format("%02X ", bytes[i] & 0xff));
+            }
+            return hex.toString();
+        } catch (IOException | SecurityException error) {
+            return "ERROR reading header: " + error.getClass().getSimpleName();
+        }
     }
 
     private String formatBytes(long bytes) {
