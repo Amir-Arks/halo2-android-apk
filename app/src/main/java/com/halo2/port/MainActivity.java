@@ -151,34 +151,34 @@ public class MainActivity extends Activity {
             long actualLength = file.length();
 
             StringBuilder out = new StringBuilder();
-            out.append("HALO 2 MAP HEADER VALIDATION\\n");
+            out.append("HALO 2 MAP HEADER VALIDATION\n");
             out.append("Signature: ").append(magic == 0x68656164L ? "head (valid signature)" :
-                    String.format("unknown 0x%08X", magic)).append("\\n");
-            out.append(String.format("Format/version word: 0x%08X\\n", format));
-            out.append("Declared end-of-file: ").append(eof).append(" bytes\\n");
-            out.append("Actual file length: ").append(actualLength).append(" bytes\\n");
-            out.append(String.format("Index offset: 0x%08X (%d)\\n", indexOffset, indexOffset));
-            out.append(String.format("Index length: 0x%08X (%d)\\n", indexLength, indexLength));
-            out.append(String.format("Index + metadata length: 0x%08X\\n", indexAndMetaLength));
-            out.append(String.format("All-except-raw length: 0x%08X\\n", allExceptRawLength));
+                    String.format("unknown 0x%08X", magic)).append("\n");
+            out.append(String.format("Format/version word: 0x%08X\n", format));
+            out.append("Declared end-of-file: ").append(eof).append(" bytes\n");
+            out.append("Actual file length: ").append(actualLength).append(" bytes\n");
+            out.append(String.format("Index offset: 0x%08X (%d)\n", indexOffset, indexOffset));
+            out.append(String.format("Index length: 0x%08X (%d)\n", indexLength, indexLength));
+            out.append(String.format("Index + metadata length: 0x%08X\n", indexAndMetaLength));
+            out.append(String.format("All-except-raw length: 0x%08X\n", allExceptRawLength));
 
             boolean signatureOk = magic == 0x68656164L;
             boolean eofOk = eof >= 0x800 && eof <= actualLength;
             boolean indexRangeOk = indexOffset <= actualLength
                     && indexLength <= actualLength - indexOffset;
-            out.append("\\nVALIDATION\\n");
-            out.append("Header signature: ").append(signatureOk ? "PASS" : "FAIL").append("\\n");
-            out.append("Declared file bounds: ").append(eofOk ? "PASS" : "CHECK").append("\\n");
-            out.append("Index range inside file: ").append(indexRangeOk ? "PASS" : "CHECK").append("\\n");
-            out.append("Note: these checks validate bounds only; they do not decode tags or render a level.\\n");
+            out.append("\nVALIDATION\n");
+            out.append("Header signature: ").append(signatureOk ? "PASS" : "FAIL").append("\n");
+            out.append("Declared file bounds: ").append(eofOk ? "PASS" : "CHECK").append("\n");
+            out.append("Index range inside file: ").append(indexRangeOk ? "PASS" : "CHECK").append("\n");
+            out.append("Note: these checks validate bounds only; they do not decode tags or render a level.\n");
 
-            out.append("\\nFIRST 64 BYTES (LE uint32)\\nOffset   Value       Raw bytes\\n");
+            out.append("\nFIRST 64 BYTES (LE uint32)\nOffset   Value       Raw bytes\n");
             for (int offset = 0; offset + 3 < count; offset += 4) {
                 long value = le32(bytes, offset);
                 out.append(String.format("0x%02X    0x%08X  %02X %02X %02X %02X",
                         offset, value, bytes[offset] & 0xff, bytes[offset + 1] & 0xff,
                         bytes[offset + 2] & 0xff, bytes[offset + 3] & 0xff));
-                out.append('\\n');
+                out.append('\n');
             }
             return out.toString();
         } catch (IOException | SecurityException error) {
