@@ -42,16 +42,16 @@ public final class Halo2MapReader {
         long allocationLength = u32(h, 0x1C);
 
         StringBuilder out = new StringBuilder();
-        out.append("HALO 2 MAP STRUCTURE CHECK\\n");
+        out.append("HALO 2 MAP STRUCTURE CHECK\n");
         out.append("Signature: ").append(hex(magic));
-        out.append(magic == HEADER_MAGIC ? " (head)\\n" : " (unexpected)\\n");
-        out.append("Version: ").append(version).append('\\n');
-        out.append("Declared file length: ").append(declaredLength).append(" bytes\\n");
-        out.append("Actual file length: ").append(reportedLength).append(" bytes\\n");
-        out.append("Index offset: ").append(hex(indexOffset)).append(" (").append(indexOffset).append(")\\n");
-        out.append("Index length: ").append(hex(indexLength)).append(" (").append(indexLength).append(")\\n");
-        out.append("Raw-data length field: ").append(hex(rawLength)).append('\\n');
-        out.append("Allocation-length field: ").append(hex(allocationLength)).append('\\n');
+        out.append(magic == HEADER_MAGIC ? " (head)\n" : " (unexpected)\n");
+        out.append("Version: ").append(version).append('\n');
+        out.append("Declared file length: ").append(declaredLength).append(" bytes\n");
+        out.append("Actual file length: ").append(reportedLength).append(" bytes\n");
+        out.append("Index offset: ").append(hex(indexOffset)).append(" (").append(indexOffset).append(")\n");
+        out.append("Index length: ").append(hex(indexLength)).append(" (").append(indexLength).append(")\n");
+        out.append("Raw-data length field: ").append(hex(rawLength)).append('\n');
+        out.append("Allocation-length field: ").append(hex(allocationLength)).append('\n');
 
         boolean signatureOk = magic == HEADER_MAGIC;
         boolean versionOk = version == SUPPORTED_VERSION;
@@ -61,39 +61,39 @@ public final class Halo2MapReader {
         boolean metadataRangeOk = indexLength <= reportedLength
                 && indexOffset <= reportedLength - indexLength;
 
-        out.append("\\nVALIDATION\\n");
-        out.append("Header signature: ").append(pass(signatureOk)).append('\\n');
-        out.append("Supported version 8: ").append(pass(versionOk)).append('\\n');
-        out.append("Declared file length: ").append(pass(declaredLengthOk)).append('\\n');
-        out.append("Index range inside file: ").append(pass(indexRangeOk)).append('\\n');
+        out.append("\nVALIDATION\n");
+        out.append("Header signature: ").append(pass(signatureOk)).append('\n');
+        out.append("Supported version 8: ").append(pass(versionOk)).append('\n');
+        out.append("Declared file length: ").append(pass(declaredLengthOk)).append('\n');
+        out.append("Index range inside file: ").append(pass(indexRangeOk)).append('\n');
 
         if (reportedLength >= 4) {
             byte[] tail = readAt(resolver, uri, reportedLength - 4, 4);
             long footer = u32(ByteBuffer.wrap(tail).order(ByteOrder.LITTLE_ENDIAN), 0);
             out.append("Header footer: ").append(hex(footer));
-            out.append(footer == FOOTER_MAGIC ? " (foot)\\n" : " (unexpected)\\n");
-            out.append("Footer signature: ").append(pass(footer == FOOTER_MAGIC)).append('\\n');
+            out.append(footer == FOOTER_MAGIC ? " (foot)\n" : " (unexpected)\n");
+            out.append("Footer signature: ").append(pass(footer == FOOTER_MAGIC)).append('\n');
         }
 
         if (indexRangeOk && indexLength >= 4) {
             int sampleCount = (int) Math.min(INDEX_SAMPLE_BYTES, indexLength);
             byte[] sample = readAt(resolver, uri, indexOffset, sampleCount);
             ByteBuffer words = ByteBuffer.wrap(sample).order(ByteOrder.LITTLE_ENDIAN);
-            out.append("\\nINDEX REGION SAMPLE (raw LE uint32; layout not assumed)\\n");
+            out.append("\nINDEX REGION SAMPLE (raw LE uint32; layout not assumed)\n");
             for (int off = 0; off + 4 <= sample.length; off += 4) {
-                out.append(String.format(Locale.ROOT, "0x%08X  0x%08X\\n",
+                out.append(String.format(Locale.ROOT, "0x%08X  0x%08X\n",
                         indexOffset + off, u32(words, off)));
             }
-            out.append("Sample bytes: ").append(sample.length).append('\\n');
-            out.append("Index sample is diagnostic only; no tag entries have been decoded.\\n");
+            out.append("Sample bytes: ").append(sample.length).append('\n');
+            out.append("Index sample is diagnostic only; no tag entries have been decoded.\n");
         } else {
-            out.append("\\nINDEX SAMPLE SKIPPED: invalid or empty index range.\\n");
+            out.append("\nINDEX SAMPLE SKIPPED: invalid or empty index range.\n");
         }
 
-        out.append("\\nRESULT: ");
+        out.append("\nRESULT: ");
         out.append(signatureOk && versionOk && declaredLengthOk && indexRangeOk
                 ? "HEADER AND INDEX BOUNDS PASS" : "HEADER VALIDATION FAILED");
-        out.append("\\nThis does not load assets or run gameplay.");
+        out.append("\nThis does not load assets or run gameplay.");
         return out.toString();
     }
 
