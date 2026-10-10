@@ -10,7 +10,11 @@ android {
         applicationId 'com.halo2.port'
         minSdk 30
         targetSdk 35
-        versionCode 1
-        versionName '0.1-native-test'
+        versionCode 2
+        versionName '0.2-asset-check'
     }
+}
+
+dependencies {
+    implementation 'androidx.documentfile:documentfile:1.0.1'
 }
