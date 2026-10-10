@@ -58,8 +58,6 @@ public final class Halo2MapReader {
         boolean declaredLengthOk = declaredLength == reportedLength;
         boolean indexRangeOk = indexOffset <= reportedLength
                 && indexLength <= reportedLength - indexOffset;
-        boolean metadataRangeOk = indexLength <= reportedLength
-                && indexOffset <= reportedLength - indexLength;
 
         out.append("\nVALIDATION\n");
         out.append("Header signature: ").append(pass(signatureOk)).append('\n');
@@ -67,13 +65,14 @@ public final class Halo2MapReader {
         out.append("Declared file length: ").append(pass(declaredLengthOk)).append('\n');
         out.append("Index range inside file: ").append(pass(indexRangeOk)).append('\n');
 
-        if (reportedLength >= 4) {
-            byte[] tail = readAt(resolver, uri, reportedLength - 4, 4);
-            long footer = u32(ByteBuffer.wrap(tail).order(ByteOrder.LITTLE_ENDIAN), 0);
-            out.append("Header footer: ").append(hex(footer));
-            out.append(footer == FOOTER_MAGIC ? " (foot)\n" : " (unexpected)\n");
-            out.append("Footer signature: ").append(pass(footer == FOOTER_MAGIC)).append('\n');
-        }
+        // The "foot" marker, when present, belongs to the map header;
+        // the final bytes of a map may be padding and are not a footer.
+        long footer = u32(h, 0x3C);
+        out.append("Header footer field: ").append(hex(footer));
+        out.append(footer == FOOTER_MAGIC ? " (foot)\n" : " (not foot; informational)\n");
+        out.append("Header footer marker: ")
+                .append(footer == FOOTER_MAGIC ? "PRESENT" : "NOT PRESENT")
+                .append(" (not used to reject this map)\n");
 
         if (indexRangeOk && indexLength >= 4) {
             int sampleCount = (int) Math.min(INDEX_SAMPLE_BYTES, indexLength);
