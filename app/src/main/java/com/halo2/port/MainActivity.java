@@ -109,7 +109,7 @@ public class MainActivity extends Activity {
             report.append("\n");
             report.append(Halo2MapParser.inspect(
                     getContentResolver(), sampleMap.getUri(), sampleMap.getName()));
-            report.append("\\n");
+            report.append("\n");
         }
 
         if (xbe != null && maps != null && maps.isDirectory() && mapFiles > 0) {
