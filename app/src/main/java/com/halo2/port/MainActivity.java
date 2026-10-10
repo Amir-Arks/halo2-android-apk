@@ -139,13 +139,32 @@ public class MainActivity extends Activity {
                 if (n < 0) break;
                 count += n;
             }
-            if (count == 0) return "(empty file)";
-            StringBuilder hex = new StringBuilder();
-            for (int i = 0; i < count; i++) {
-                if (i > 0 && i % 16 == 0) hex.append('\n');
-                hex.append(String.format("%02X ", bytes[i] & 0xff));
+            if (count < 4) return "ERROR: header shorter than 4 bytes";
+
+            long magic = ((long) bytes[0] & 0xff)
+                    | (((long) bytes[1] & 0xff) << 8)
+                    | (((long) bytes[2] & 0xff) << 16)
+                    | (((long) bytes[3] & 0xff) << 24);
+            StringBuilder out = new StringBuilder();
+            out.append("Signature as little-endian word: ");
+            if (magic == 0x68656164L) out.append("head (0x68656164)\n");
+            else out.append(String.format("unknown (0x%08X)\n", magic));
+            out.append("Offset  LE uint32   Raw bytes\n");
+
+            for (int offset = 0; offset + 3 < count; offset += 4) {
+                long value = ((long) bytes[offset] & 0xff)
+                        | (((long) bytes[offset + 1] & 0xff) << 8)
+                        | (((long) bytes[offset + 2] & 0xff) << 16)
+                        | (((long) bytes[offset + 3] & 0xff) << 24);
+                out.append(String.format("0x%02X    0x%08X  %02X %02X %02X %02X",
+                        offset, value, bytes[offset] & 0xff, bytes[offset + 1] & 0xff,
+                        bytes[offset + 2] & 0xff, bytes[offset + 3] & 0xff));
+                if (offset == 0) out.append("  <- magic candidate");
+                out.append('\n');
             }
-            return hex.toString();
+            if (count < bytes.length) out.append("Only ").append(count).append(" bytes available.\n");
+            out.append("\nWord values are decoded for inspection; field meanings are not assumed.");
+            return out.toString();
         } catch (IOException | SecurityException error) {
             return "ERROR reading header: " + error.getClass().getSimpleName();
         }
