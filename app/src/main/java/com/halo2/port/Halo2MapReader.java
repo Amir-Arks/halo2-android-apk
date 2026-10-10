@@ -97,18 +97,18 @@ public final class Halo2MapReader {
                     printableWords.put(candidate, printableWords.getOrDefault(candidate, 0) + 1);
                 }
             }
-            out.append("\\nALIGNED PRINTABLE-WORD SCAN (exploratory)\\n");
+            out.append("\nALIGNED PRINTABLE-WORD SCAN (exploratory)\n");
             out.append("Aligned 4-byte printable candidates: ").append(printableWords.values()
                     .stream().mapToInt(Integer::intValue).sum()).append('\\n');
             int shown = 0;
             for (java.util.Map.Entry<String, Integer> entry : printableWords.entrySet()) {
                 out.append(entry.getKey()).append(" : ").append(entry.getValue()).append('\\n');
                 if (++shown >= 24) {
-                    out.append("Output capped at 24 unique candidates.\\n");
+                    out.append("Output capped at 24 unique candidates.\n");
                     break;
                 }
             }
-            out.append("Candidates are not decoded tag records; index layout remains unconfirmed.\\n");
+            out.append("Candidates are not decoded tag records; index layout remains unconfirmed.\n");
         } else {
             out.append("\nINDEX SAMPLE SKIPPED: invalid or empty index range.\n");
         }
