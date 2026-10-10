@@ -180,10 +180,53 @@ public class MainActivity extends Activity {
                         bytes[offset + 2] & 0xff, bytes[offset + 3] & 0xff));
                 out.append('\n');
             }
+            if (signatureOk && eofOk && indexRangeOk && indexLength >= 16) {
+                out.append("\\nINDEX REGION SAMPLE (first 128 bytes)\\n");
+                out.append(readRegionWords(file, indexOffset, (int) Math.min(128L, indexLength)));
+                out.append("Raw words only; field meanings are not assumed.\\n");
+            } else {
+                out.append("\\nINDEX REGION SAMPLE: SKIPPED (header/range validation did not pass).\\n");
+            }
             return out.toString();
         } catch (IOException | SecurityException error) {
             return "ERROR reading header: " + error.getClass().getSimpleName()
                     + ": " + error.getMessage();
+        }
+    }
+
+    private String readRegionWords(DocumentFile file, long offset, int maxBytes) {
+        if (offset < 0 || maxBytes < 0) return "ERROR: invalid region range\\n";
+        try (InputStream in = getContentResolver().openInputStream(file.getUri())) {
+            if (in == null) return "ERROR: unable to reopen map file\\n";
+            long remaining = offset;
+            while (remaining > 0) {
+                long skipped = in.skip(remaining);
+                if (skipped > 0) {
+                    remaining -= skipped;
+                } else {
+                    if (in.read() < 0) return "ERROR: reached EOF before index offset\\n";
+                    remaining--;
+                }
+            }
+            byte[] bytes = new byte[maxBytes];
+            int count = 0;
+            while (count < bytes.length) {
+                int n = in.read(bytes, count, bytes.length - count);
+                if (n < 0) break;
+                count += n;
+            }
+            StringBuilder out = new StringBuilder();
+            out.append("Read ").append(count).append(" bytes at file offset 0x")
+                    .append(String.format("%08X", offset)).append("\\n");
+            for (int p = 0; p + 3 < count; p += 4) {
+                out.append(String.format("0x%08X  0x%08X  %02X %02X %02X %02X\\n",
+                        offset + p, le32(bytes, p), bytes[p] & 0xff,
+                        bytes[p + 1] & 0xff, bytes[p + 2] & 0xff, bytes[p + 3] & 0xff));
+            }
+            return out.toString();
+        } catch (IOException | SecurityException error) {
+            return "ERROR reading index region: " + error.getClass().getSimpleName()
+                    + ": " + error.getMessage() + "\\n";
         }
     }
 
