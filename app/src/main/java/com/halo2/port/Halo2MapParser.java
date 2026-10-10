@@ -96,7 +96,47 @@ final class Halo2MapParser {
                         out.append(String.format(Locale.ROOT,
                                 "0x%08X  0x%08X\n", indexOffset + pos, sample.getInt(pos)));
                     }
-                    out.append("Raw index words only; their entry layout is not yet decoded.\n");
+                    long sentinelCount = 0;
+                    long highBitCount = 0;
+                    long alignedValueCount = 0;
+                    long printableWordCount = 0;
+                    StringBuilder printable = new StringBuilder();
+                    for (int pos = 0; pos + 4 <= sample.limit(); pos += 4) {
+                        long word = Integer.toUnsignedLong(sample.getInt(pos));
+                        if (word == 0xFFFFFFFFL) sentinelCount++;
+                        if ((word & 0x80000000L) != 0) highBitCount++;
+                        if ((word & 3L) == 0 && word != 0) alignedValueCount++;
+                        boolean allPrintable = true;
+                        for (int shift = 0; shift < 32; shift += 8) {
+                            int ch = (int) ((word >>> shift) & 0xFF);
+                            if (ch < 0x20 || ch > 0x7E) {
+                                allPrintable = false;
+                                break;
+                            }
+                        }
+                        if (allPrintable) {
+                            printableWordCount++;
+                            if (printable.length() < 240) {
+                                if (printable.length() > 0) printable.append(", ");
+                                printable.append(String.format(Locale.ROOT,
+                                        "0x%08X='%c%c%c%c'", word,
+                                        (char) (word & 0xFF),
+                                        (char) ((word >>> 8) & 0xFF),
+                                        (char) ((word >>> 16) & 0xFF),
+                                        (char) ((word >>> 24) & 0xFF)));
+                            }
+                        }
+                    }
+                    out.append("\nINDEX SAMPLE DIAGNOSTICS (exploratory, not tag decoding)\n");
+                    out.append("Sample bytes: ").append(sample.limit()).append("\n");
+                    out.append("0xFFFFFFFF words: ").append(sentinelCount).append("\n");
+                    out.append("High-bit-set words: ").append(highBitCount).append("\n");
+                    out.append("Nonzero 4-byte-aligned values: ").append(alignedValueCount).append("\n");
+                    out.append("Printable 4-byte words: ").append(printableWordCount).append("\n");
+                    if (printable.length() > 0) {
+                        out.append("Printable candidates: ").append(printable).append("\n");
+                    }
+                    out.append("These counts describe only the first sample; entry meanings are not assumed.\n");
                 } else {
                     out.append("\nIndex sample skipped because bounds are invalid.\n");
                 }
