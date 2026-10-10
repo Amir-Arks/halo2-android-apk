@@ -35,7 +35,7 @@ public class MainActivity extends Activity {
         page.addView(title);
 
         TextView intro = new TextView(this);
-        intro.setText("Milestone 1: verify your extracted game files. Select the folder that contains default.xbe and the maps directory. This app does not run gameplay yet.");
+        intro.setText("Milestone 2: validate the extracted game files and map header. Select the folder that contains default.xbe and the maps directory. This app does not run gameplay yet.");
         intro.setTextSize(16);
         intro.setPadding(0, 0, 0, 18);
         page.addView(intro);
@@ -106,19 +106,19 @@ public class MainActivity extends Activity {
         report.append("Top-level .map files: ").append(mapFiles).append("\n");
         report.append("Map data size: ").append(formatBytes(mapBytes)).append("\n");
         if (sampleMap != null) {
-            report.append("\nSAMPLE MAP HEADER (first 64 bytes)\n");
-            report.append("File: ").append(sampleMap.getName()).append("\n");
-            report.append(readHeaderHex(sampleMap)).append("\n");
+            report.append("\n");
+            report.append(Halo2MapParser.inspect(
+                    getContentResolver(), sampleMap.getUri(), sampleMap.getName()));
+            report.append("\n");
         }
 
         if (xbe != null && maps != null && maps.isDirectory() && mapFiles > 0) {
-            report.append("RESULT: BASIC ASSET STRUCTURE FOUND\n");
-            report.append("Next: parse map headers and validate engine data structures.");
+            report.append("\nASSET RESULT: BASIC GAME FILE STRUCTURE FOUND");
         } else {
-            report.append("RESULT: INCOMPLETE OR WRONG FOLDER\n");
-            report.append("Choose the extracted Halo 2 folder containing default.xbe and maps/*.map.");
+            report.append("\nASSET RESULT: INCOMPLETE OR WRONG FOLDER");
+            report.append("\nChoose the extracted Halo 2 folder containing default.xbe and maps/*.map.");
         }
-        report.append("\n\nThis is file discovery only—not gameplay or a complete native port.");
+        report.append("\n\nMilestone 2 validates map headers and index bounds only. Tag entries, assets, rendering, and gameplay are not yet implemented.");
         status.setText(report.toString());
     }
 
