@@ -84,9 +84,38 @@ public final class Halo2MapReader {
             }
             out.append("Sample bytes: ").append(sample.length).append('\n');
 
+            // The decompiled cache loader defines an 0x20-byte s_cache_tags_header:
+            // groups, group_count, instances, scenario_index, globals_index,
+            // unknown14, instance_count, signature. Pointer values are Xbox virtual
+            // addresses; this milestone reports them but does not dereference them.
+            byte[] indexBytes = readAt(resolver, uri, indexOffset, (int) indexLength);
+            if (indexBytes.length >= 0x20) {
+                ByteBuffer tags = ByteBuffer.wrap(indexBytes).order(ByteOrder.LITTLE_ENDIAN);
+                long groupsPtr = u32(tags, 0x00);
+                long groupCount = u32(tags, 0x04);
+                long instancesPtr = u32(tags, 0x08);
+                long scenarioIndex = u32(tags, 0x0C);
+                long globalsIndex = u32(tags, 0x10);
+                long instanceCount = u32(tags, 0x18);
+                long tagsSignature = u32(tags, 0x1C);
+                boolean tagsSignatureOk = tagsSignature == 0x74616773L; // retail 'tags'
+                boolean countsPlausible = groupCount > 0 && groupCount <= 65536
+                        && instanceCount > 0 && instanceCount <= 1000000;
+                out.append("\\nTAG DATA HEADER CHECK (decompiled layout)\\n");
+                out.append("Groups pointer: ").append(hex(groupsPtr)).append('\\n');
+                out.append("Group count: ").append(groupCount).append('\\n');
+                out.append("Instances pointer: ").append(hex(instancesPtr)).append('\\n');
+                out.append("Scenario index: ").append(hex(scenarioIndex)).append('\\n');
+                out.append("Globals index: ").append(hex(globalsIndex)).append('\\n');
+                out.append("Instance count: ").append(instanceCount).append('\\n');
+                out.append("Tag header signature: ").append(hex(tagsSignature)).append('\\n');
+                out.append("Tag header signature: ").append(pass(tagsSignatureOk)).append('\\n');
+                out.append("Tag counts plausible: ").append(pass(countsPlausible)).append('\\n');
+                out.append("Pointer values are reported only; relocation/base is not yet verified.\\n");
+            }
+
             // Research aid only: scan aligned words throughout the bounded index
             // for printable 4-byte sequences. These are candidates, not proven tags.
-            byte[] indexBytes = readAt(resolver, uri, indexOffset, (int) indexLength);
             java.util.Map<String, Integer> printableWords = new java.util.TreeMap<>();
             ByteBuffer scan = ByteBuffer.wrap(indexBytes).order(ByteOrder.LITTLE_ENDIAN);
             for (int off = 0; off + 4 <= indexBytes.length; off += 4) {
