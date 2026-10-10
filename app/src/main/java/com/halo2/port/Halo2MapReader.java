@@ -19,7 +19,7 @@ public final class Halo2MapReader {
     private static final long HEADER_MAGIC = 0x68656164L; // "head"
     private static final long FOOTER_MAGIC = 0x666F6F74L; // "foot"
     private static final long SUPPORTED_VERSION = 8L;
-    private static final int HEADER_BYTES = 64;
+    private static final int HEADER_BYTES = 0x800;
     private static final int INDEX_SAMPLE_BYTES = 128;
 
     private Halo2MapReader() {}
@@ -65,10 +65,9 @@ public final class Halo2MapReader {
         out.append("Declared file length: ").append(pass(declaredLengthOk)).append('\n');
         out.append("Index range inside file: ").append(pass(indexRangeOk)).append('\n');
 
-        // The "foot" marker, when present, belongs to the map header;
-        // the final bytes of a map may be padding and are not a footer.
-        long footer = u32(h, 0x3C);
-        out.append("Header footer field: ").append(hex(footer));
+        // Halo 2 cache headers are 0x800 bytes; the footer signature is at 0x7FC.
+        long footer = u32(h, 0x7FC);
+        out.append("Header footer signature: ").append(hex(footer));
         out.append(footer == FOOTER_MAGIC ? " (foot)\n" : " (not foot; informational)\n");
         out.append("Header footer marker: ")
                 .append(footer == FOOTER_MAGIC ? "PRESENT" : "NOT PRESENT")
